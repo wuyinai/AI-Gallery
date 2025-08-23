@@ -9,7 +9,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wuyinai.wuyipicturebackend.exception.BusinessException;
 import com.wuyinai.wuyipicturebackend.exception.ErrorCode;
 import com.wuyinai.wuyipicturebackend.exception.ThrowUtils;
-import com.wuyinai.wuyipicturebackend.manager.FileManager;
 import com.wuyinai.wuyipicturebackend.manager.upload.FilePictureUpload;
 import com.wuyinai.wuyipicturebackend.manager.upload.PictureUploadTemplate;
 import com.wuyinai.wuyipicturebackend.manager.upload.UrlPictureUpload;
@@ -33,7 +32,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;

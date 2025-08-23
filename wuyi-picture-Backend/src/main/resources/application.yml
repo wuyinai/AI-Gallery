@@ -13,6 +13,13 @@ spring:
     url: jdbc:mysql://localhost:3306/wuyi_picture
     username: root
     password: 15288638209abcd
+  # redis
+  redis:
+    database: 0
+    host: 127.0.0.1
+    port: 6379
+    timeout: 5000
+
   # 开放更大的文件上传体积
   servlet:
     multipart:
