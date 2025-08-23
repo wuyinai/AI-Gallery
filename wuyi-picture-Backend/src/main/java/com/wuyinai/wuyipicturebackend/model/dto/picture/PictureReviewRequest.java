@@ -3,6 +3,7 @@ package com.wuyinai.wuyipicturebackend.model.dto.picture;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * @Description: 图片审核请求
@@ -26,8 +27,12 @@ public class PictureReviewRequest implements Serializable {
     /**  
      * 审核信息  
      */  
-    private String reviewMessage;  
-  
-  
+    private String reviewMessage;
+
+    /**
+     * 审核时间
+     */
+    private Date reviewTime;
+
     private static final long serialVersionUID = 1L;  
 }
