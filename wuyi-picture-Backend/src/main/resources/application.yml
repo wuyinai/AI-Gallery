@@ -2,11 +2,21 @@ server:
   port: 8123
   servlet:
     context-path: /api
+    # cookie 15天过期
+    session:
+      cookie:
+        max-age: 1296000
 spring:
   application:
     name: wuyi-picture-backend
   profiles:
     active: local
+
+  # session 配置
+  session:
+    store-type: redis
+      # session 15天时间
+    timeout: 1296000
   # 数据库配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver

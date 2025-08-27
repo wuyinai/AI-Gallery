@@ -10,9 +10,11 @@ import com.wuyinai.wuyipicturebackend.model.dto.picture.PictureUploadRequest;
 import com.wuyinai.wuyipicturebackend.model.entity.Picture;
 import com.wuyinai.wuyipicturebackend.model.entity.User;
 import com.wuyinai.wuyipicturebackend.model.vo.picture.PictureVO;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
 * @author AS
@@ -82,4 +84,16 @@ public interface PictureService extends IService<Picture> {
      * @return  创建的图片数量
      */
     Integer uploadPictureByBatch(PictureUploadByBatchRequest pictureUploadByBatchRequest, User loginUser);
+
+
+
+    /**
+     * 删除图片
+     * @param oldPicture
+     * @return
+     */
+    @Async
+    void clearPictureFile(Picture oldPicture);
+
+    List<Picture> getDeletedPictures();
 }

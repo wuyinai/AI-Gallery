@@ -85,6 +85,5 @@ public class PictureQueryRequest extends PageRequest implements Serializable {
      */
     private Long reviewerId;
 
-
     private static final long serialVersionUID = 1L;  
 }

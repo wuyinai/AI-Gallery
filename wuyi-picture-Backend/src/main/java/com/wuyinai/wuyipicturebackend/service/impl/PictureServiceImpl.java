@@ -3,12 +3,14 @@ package com.wuyinai.wuyipicturebackend.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wuyinai.wuyipicturebackend.exception.BusinessException;
 import com.wuyinai.wuyipicturebackend.exception.ErrorCode;
 import com.wuyinai.wuyipicturebackend.exception.ThrowUtils;
+import com.wuyinai.wuyipicturebackend.manager.CosManager;
 import com.wuyinai.wuyipicturebackend.manager.upload.FilePictureUpload;
 import com.wuyinai.wuyipicturebackend.manager.upload.PictureUploadTemplate;
 import com.wuyinai.wuyipicturebackend.manager.upload.UrlPictureUpload;
@@ -31,6 +33,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.BeanUtils;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -60,6 +63,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private CosManager cosManager;
 
     /**
      * 上传图片
@@ -379,6 +385,46 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             }
         }
         return uploadCount;
+    }
+
+    @Async//使得方法可以被异步执行
+    @Override
+    public void clearPictureFile(Picture oldPicture) {
+        // 判断该图片是否被多条记录使用
+        String pictureUrl = oldPicture.getUrl();
+        long count = this.lambdaQuery()
+                .eq(Picture::getUrl, pictureUrl)
+                .count();
+        // 有不止一条记录用到了该图片，不清理
+        if (count > 1) {
+            return;
+        }
+        // FIXME 注意，这里的 url 包含了域名，实际上只要传 key 值（存储路径）就够了
+        cosManager.deleteObject(oldPicture.getUrl());
+        // 清理缩略图
+        String thumbnailUrl = oldPicture.getThumbnailUrl();
+        if (StrUtil.isNotBlank(thumbnailUrl)) {
+            cosManager.deleteObject(thumbnailUrl);
+        }
+    }
+
+    /**
+     * 获取所有被逻辑删除的图片数据
+     * @return 被删除的图片列表
+     * TODO 这个方法需要优化
+     */
+    @Override
+    public List<Picture> getDeletedPictures() {
+        // 创建查询包装器
+        QueryWrapper<Picture> queryWrapper = new QueryWrapper<>();
+        // 手动指定查询已删除的数据（根据实际字段名和删除标识值调整）
+        queryWrapper.eq("isDelete", 1);  // 假设1表示已删除
+
+        // 如果需要分页查询，可以使用Page
+        // Page<Picture> page = new Page<>(1, 10);
+        // return pictureMapper.selectPage(page, queryWrapper).getRecords();
+        // 不分页查询所有被删除的数据
+        return this.list(queryWrapper);
     }
 }
 

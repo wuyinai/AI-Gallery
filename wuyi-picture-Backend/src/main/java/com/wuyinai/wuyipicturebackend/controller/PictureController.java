@@ -20,6 +20,7 @@ import com.wuyinai.wuyipicturebackend.model.enums.PictureReviewStatusEnum;
 import com.wuyinai.wuyipicturebackend.model.vo.picture.PictureVO;
 import com.wuyinai.wuyipicturebackend.service.PictureService;
 import com.wuyinai.wuyipicturebackend.service.UserService;
+import com.wuyinai.wuyipicturebackend.util.CacheCleaner;
 import org.springframework.beans.BeanUtils;
 import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -36,6 +37,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import static com.wuyinai.wuyipicturebackend.config.LocalCacheConfig.LOCAL_CACHE;
+
 @RestController
 @RequestMapping("/picture")
 public class PictureController {
@@ -43,17 +46,15 @@ public class PictureController {
     private final UserService userService;
     private final PictureService pictureService;
     private final StringRedisTemplate stringRedisTemplate;
+    private final CacheCleaner cacheCleaner;
 
-    public PictureController(UserService userService, PictureService pictureService, StringRedisTemplate stringRedisTemplate) {
+    public PictureController(UserService userService, PictureService pictureService, StringRedisTemplate stringRedisTemplate, CacheCleaner cacheCleaner) {
         this.userService = userService;
         this.pictureService = pictureService;
         this.stringRedisTemplate = stringRedisTemplate;
+        this.cacheCleaner = cacheCleaner;
     }
-    //构建本地缓存，设置缓存容量和过期时间
-    private final Cache<String,String> LOCAL_CACHE = Caffeine.newBuilder().initialCapacity(1024)
-            .maximumSize(10000L)
-            .expireAfterWrite(5L, TimeUnit.MINUTES)
-            .build();
+
 
 
     /**
@@ -99,6 +100,7 @@ public class PictureController {
         // 操作数据库
         boolean result = pictureService.removeById(id);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        cacheCleaner.cleanPictureCaches();
         return ResultUtils.success(true);
     }
 
@@ -178,24 +180,12 @@ public class PictureController {
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<PictureVO>> listPictureVOByPage(@RequestBody PictureQueryRequest pictureQueryRequest,
                                                              HttpServletRequest request) {
-//        long current = pictureQueryRequest.getCurrent();
-//        long size = pictureQueryRequest.getPageSize();
-//        // 设置只能查看通过审核的内容
-//        pictureQueryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
-//        // 限制爬虫
-//        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
-//        // 查询数据库
-//        Page<Picture> picturePage = pictureService.page(new Page<>(current, size),
-//                pictureService.getQueryWrapper(pictureQueryRequest));
-//        // 获取封装类
-//        return ResultUtils.success(pictureService.getPictureVOPage(picturePage, request));
         long current = pictureQueryRequest.getCurrent();
         long pageSize = pictureQueryRequest.getPageSize();
         // 限制爬虫
         ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR);
         // 普通用户默认只能查看已过审的数据
         pictureQueryRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
-
 
         //构建缓存key
         String queryCondition = JSONUtil.toJsonStr(pictureQueryRequest);
@@ -309,5 +299,9 @@ public class PictureController {
         return ResultUtils.success(uploadCount);
     }
 
-
+    @GetMapping("/deletedss")
+    public BaseResponse<List<Picture>> getDeletedPictures() {
+        List<Picture> deletedPictures = pictureService.getDeletedPictures();
+        return ResultUtils.success(deletedPictures);
+    }
 }
