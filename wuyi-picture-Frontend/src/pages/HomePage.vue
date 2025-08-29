@@ -42,10 +42,9 @@
           <a-card hoverable @click="doClickPicture(picture)">
             <template #cover>
               <img
-                style="height: 180px; object-fit: cover"
                 :alt="picture.name"
                 :src="picture.thumbnailUrl ?? picture.url"
-                loading="lazy"
+                style="height: 180px; object-fit: cover"
               />
             </template>
             <a-card-meta :title="picture.name">
@@ -64,18 +63,28 @@
         </a-list-item>
       </template>
     </a-list>
+    <PictureList :dataList="dataList" :loading="loading" />
+    <!-- 分页 -->
+    <a-pagination
+      style="text-align: right"
+      v-model:current="searchParams.current"
+      v-model:pageSize="searchParams.pageSize"
+      :total="total"
+      @change="onPageChange"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 const msg = "欢迎来到飞云图库，开始你的图片旅程";
-import { computed, onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import {
   listPictureTagCategoryUsingGet,
   listPictureVoByPageUsingPost,
-} from '@/api/pictureController.ts'
+} from '@/api/pictureController'
 import { message } from 'ant-design-vue'
 import { useRouter } from 'vue-router' // 定义数据
+import PictureList from '@/components/PictureList.vue'
 
 // 定义数据
 const dataList = ref<API.PictureVO[]>([])
@@ -123,24 +132,15 @@ onMounted(() => {
 })
 
 // 分页参数
-const pagination = computed(() => {
-  return {
-    current: searchParams.current,
-    pageSize: searchParams.pageSize,
-    total: total.value,
-    onChange: (page: number, pageSize: number) => {
-      searchParams.current = page
-      searchParams.pageSize = pageSize
-      fetchData()
-    },
-  }
-})
+const onPageChange = (page: number, pageSize: number) => {
+  searchParams.current = page
+  searchParams.pageSize = pageSize
+  fetchData()
+}
 
 // 搜索
 const doSearch = () => {
-  // 重置搜索条件
-  searchParams.current = 1
-  fetchData()
+
 }
 
 // 标签和分类列表
@@ -162,15 +162,6 @@ const getTagCategoryOptions = async () => {
     message.error('获取标签分类列表失败，' + res.data.message)
   }
 }
-
-const router = useRouter()
-// 跳转至图片详情页
-const doClickPicture = (picture: API.PictureVO) => {
-  router.push({
-    path: `/picture/${picture.id}`,
-  })
-}
-
 onMounted(() => {
   getTagCategoryOptions()
 })

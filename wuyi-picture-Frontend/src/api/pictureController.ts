@@ -17,6 +17,14 @@ export async function deletePictureUsingPost(
   })
 }
 
+/** getDeletedPictures GET /api/picture/deletedss */
+export async function getDeletedPicturesUsingGet(options?: { [key: string]: any }) {
+  return request<API.BaseResponseListPicture_>('/api/picture/deletedss', {
+    method: 'GET',
+    ...(options || {}),
+  })
+}
+
 /** editPicture POST /api/picture/edit */
 export async function editPictureUsingPost(
   body: API.PictureEditRequest,

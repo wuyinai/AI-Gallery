@@ -3,10 +3,7 @@ package com.wuyinai.wuyipicturebackend.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.wuyinai.wuyipicturebackend.model.dto.picture.PictureQueryRequest;
-import com.wuyinai.wuyipicturebackend.model.dto.picture.PictureReviewRequest;
-import com.wuyinai.wuyipicturebackend.model.dto.picture.PictureUploadByBatchRequest;
-import com.wuyinai.wuyipicturebackend.model.dto.picture.PictureUploadRequest;
+import com.wuyinai.wuyipicturebackend.model.dto.picture.*;
 import com.wuyinai.wuyipicturebackend.model.entity.Picture;
 import com.wuyinai.wuyipicturebackend.model.entity.User;
 import com.wuyinai.wuyipicturebackend.model.vo.picture.PictureVO;
@@ -88,12 +85,37 @@ public interface PictureService extends IService<Picture> {
 
 
     /**
-     * 删除图片
+     * 删除存储对象图片
      * @param oldPicture
      * @return
      */
     @Async
     void clearPictureFile(Picture oldPicture);
 
+    /**
+     * 检查图片权限
+     *
+     * @param loginUser
+     * @param picture
+     */
+    void checkPictureAuth(User loginUser, Picture picture);
+
+
+    /**
+     * 删除图片逻辑
+     * @return
+     */
+    void deletePicture(long pictureId,User loginUser);
+    /**
+     * 编辑图片
+     * @param pictureEditRequest
+     * @param loginUser
+     */
+    void editPicture(PictureEditRequest pictureEditRequest, User loginUser);
+
+    /**
+     * 获取已逻辑删除的图片
+     * @return
+     */
     List<Picture> getDeletedPictures();
 }
