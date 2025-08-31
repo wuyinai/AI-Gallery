@@ -1,5 +1,6 @@
 package com.wuyinai.wuyipicturebackend.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
@@ -7,6 +8,9 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.wuyinai.wuyipicturebackend.api.aliyunai.model.AliYunAiApi;
+import com.wuyinai.wuyipicturebackend.api.aliyunai.model.CreateOutPaintingTaskRequest;
+import com.wuyinai.wuyipicturebackend.api.aliyunai.model.CreateOutPaintingTaskResponse;
 import com.wuyinai.wuyipicturebackend.exception.BusinessException;
 import com.wuyinai.wuyipicturebackend.exception.ErrorCode;
 import com.wuyinai.wuyipicturebackend.exception.ThrowUtils;
@@ -77,6 +81,10 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     @Resource
     private TransactionTemplate transactionTemplate;
 
+    // AI模型
+    @Resource
+    private AliYunAiApi aliYunAiApi;
+
     /**
      * 上传图片
      *
@@ -126,12 +134,14 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             }
             // 校验空间是否一致
             //没传spaceId，则复用原有图片的spaceId（这样也兼容了公共图库）
-            if(oldPicture.getSpaceId() !=  null){
-                spaceId = oldPicture.getSpaceId();
-            }else{
-                // 传了spaceId，则判断与原有spaceId一致
-                if(ObjUtil.equals(spaceId, oldPicture.getSpaceId())){
-                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "空间不一致");
+            if (spaceId == null) {
+                if (oldPicture.getSpaceId() != null) {
+                    spaceId = oldPicture.getSpaceId();
+                }
+            } else {
+                // 传了 spaceId，必须和原图片的空间 id 一致
+                if (ObjUtil.notEqual(spaceId, oldPicture.getSpaceId())) {
+                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "空间 id 不一致");
                 }
             }
         }
@@ -717,6 +727,26 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         }
     }
 
+    /**
+     * AI扩图方法
+     */
+    @Override
+    public CreateOutPaintingTaskResponse createPictureOutPaintingTask(CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest, User loginUser) {
+        // 获取图片信息
+        Long pictureId = createPictureOutPaintingTaskRequest.getPictureId();
+        Picture picture = Optional.ofNullable(this.getById(pictureId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_ERROR));
+        // 权限校验
+        checkPictureAuth(loginUser, picture);
+        // 构造请求参数
+        CreateOutPaintingTaskRequest taskRequest = new CreateOutPaintingTaskRequest();
+        CreateOutPaintingTaskRequest.Input input = new CreateOutPaintingTaskRequest.Input();
+        input.setImageUrl(picture.getUrl());
+        taskRequest.setInput(input);
+        BeanUtil.copyProperties(createPictureOutPaintingTaskRequest, taskRequest);
+        // 创建任务
+        return aliYunAiApi.createOutPaintingTask(taskRequest);
+    }
 }
 
 
