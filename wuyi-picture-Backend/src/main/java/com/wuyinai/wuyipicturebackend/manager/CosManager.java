@@ -43,25 +43,26 @@ public class CosManager {
         picOperations.setIsPicInfo(1);
         List<PicOperations.Rule> rules = new ArrayList<>();
         //图片压缩（转为webp格式）
-        String webpKey = FileUtil.mainName(key) + ".webp";
+        String webpKey =FileUtil.mainName(key) + ".webp";
         PicOperations.Rule compressRule = new PicOperations.Rule();
-        compressRule.setRule("imageMogr2/format/webp");
-        compressRule.setBucket(cosClientConfig.getBucket());
         compressRule.setFileId(webpKey);
+        compressRule.setBucket(cosClientConfig.getBucket());
+        compressRule.setRule("imageMogr2/format/webp");
         rules.add(compressRule);
         //缩略图处理
         // 仅对 > 20kb的图片生成缩略图
-        if (file.length() > 2 * 1024){
+        if (file.length() > 2 * 1024) {
             PicOperations.Rule thumbnailRule = new PicOperations.Rule();
-            thumbnailRule.setBucket(cosClientConfig.getBucket());
-            String thumbnailKey = FileUtil.mainName(key)+ "_thumbnail."+FileUtil.getSuffix(key);
+            //缩略图路径
+            String thumbnailKey = FileUtil.mainName(key) + "_thumbnail." + FileUtil.getSuffix(key);
             thumbnailRule.setFileId(thumbnailKey);
+            thumbnailRule.setBucket(cosClientConfig.getBucket());
             // 缩放规则 /thumbnail/<Width>x<Height>(如果大于原图宽高，则不处理)
-            thumbnailRule.setRule(String.format("imageMogr2/thumbnail/!%sx%s",128,128));
+            thumbnailRule.setRule(String.format("imageMogr2/thumbnail/%sx%s", 256, 256));
             rules.add(thumbnailRule);
         }
-            // 构造处理函数
-            picOperations.setRules(rules);
+        // 构造处理函数
+        picOperations.setRules(rules);
         putObjectRequest.setPicOperations(picOperations);
         return cosClient.putObject(putObjectRequest);
     }

@@ -2,6 +2,9 @@ package com.wuyinai.wuyipicturebackend.model.dto.picture;
 
 import lombok.Data;
 
+/**
+ * 批量上传图片请求
+ */
 @Data
 public class PictureUploadByBatchRequest {  
   

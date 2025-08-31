@@ -1,11 +1,14 @@
 package com.wuyinai.wuyipicturebackend.controller;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.wuyinai.wuyipicturebackend.annotation.AuthCheck;
+import com.wuyinai.wuyipicturebackend.api.imagesearch.ImageSearchApiFacade;
+import com.wuyinai.wuyipicturebackend.api.imagesearch.model.ImageSearchResult;
 import com.wuyinai.wuyipicturebackend.common.BaseResponse;
 import com.wuyinai.wuyipicturebackend.common.DeleteRequest;
 import com.wuyinai.wuyipicturebackend.common.ResultUtils;
@@ -14,6 +17,8 @@ import com.wuyinai.wuyipicturebackend.exception.BusinessException;
 import com.wuyinai.wuyipicturebackend.exception.ErrorCode;
 import com.wuyinai.wuyipicturebackend.exception.ThrowUtils;
 import com.wuyinai.wuyipicturebackend.model.dto.picture.*;
+import com.wuyinai.wuyipicturebackend.model.dto.search.SearchPictureByColorRequest;
+import com.wuyinai.wuyipicturebackend.model.dto.search.SearchPictureByPictureRequest;
 import com.wuyinai.wuyipicturebackend.model.entity.Picture;
 import com.wuyinai.wuyipicturebackend.model.entity.Space;
 import com.wuyinai.wuyipicturebackend.model.entity.User;
@@ -27,6 +32,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -297,4 +303,46 @@ public class PictureController {
         List<Picture> deletedPictures = pictureService.getDeletedPictures();
         return ResultUtils.success(deletedPictures);
     }
+
+    /**
+     * 以图搜图
+     */
+    @PostMapping("/search/picture")
+    public BaseResponse<List<ImageSearchResult>> searchPictureByPicture(@RequestBody SearchPictureByPictureRequest searchPictureByPictureRequest) {
+        ThrowUtils.throwIf(searchPictureByPictureRequest == null, ErrorCode.PARAMS_ERROR);
+        Long pictureId = searchPictureByPictureRequest.getPictureId();
+        ThrowUtils.throwIf(pictureId == null || pictureId <= 0, ErrorCode.PARAMS_ERROR);
+        Picture oldPicture = pictureService.getById(pictureId);
+        ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
+        List<ImageSearchResult> resultList = ImageSearchApiFacade.searchImage(oldPicture.getUrl());
+        return ResultUtils.success(resultList);
+    }
+
+    /**
+     * 以颜色搜图
+     */
+    @PostMapping("/search/color")
+    public BaseResponse<List<PictureVO>> searchPictureByColor(@RequestBody SearchPictureByColorRequest searchPictureByColorRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(searchPictureByColorRequest == null, ErrorCode.PARAMS_ERROR);
+        String picColor = searchPictureByColorRequest.getPicColor();
+        Long spaceId = searchPictureByColorRequest.getSpaceId();
+        User loginUser = userService.getLoginUser(request);
+        List<PictureVO> result = pictureService.searchPictureByColor(spaceId, picColor, loginUser);
+        return ResultUtils.success(result);
+    }
+
+
+    /**
+     * 批量编辑图片
+     */
+
+    @PostMapping("/edit/batch")
+    public BaseResponse<Boolean> editPictureByBatch(@RequestBody PictureEditByBatchRequest pictureEditByBatchRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(pictureEditByBatchRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        pictureService.editPictureByBatch(pictureEditByBatchRequest, loginUser);
+        return ResultUtils.success(true);
+    }
+
+
 }
